@@ -1,0 +1,104 @@
+package com.openclassrooms.projectInit.controller;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
+
+import com.openclassrooms.projectInit.TDO.StudentDTO;
+import com.openclassrooms.projectInit.model.Seminar;
+import com.openclassrooms.projectInit.model.Student;
+import com.openclassrooms.projectInit.service.StudentService;
+
+@CrossOrigin(origins = "http://localhost:3000")
+@RestController
+@RequestMapping("/api")
+public class studentController {
+	
+	@Autowired
+	private StudentService studentService;
+	
+	@Autowired
+	private ModelMapper mapper;
+
+	
+	 @GetMapping("/students")
+	 public List<StudentDTO> findAll() {		 
+		 Iterable<Student> students = studentService.getAllStudent();
+		 List<StudentDTO> studentDTOList = new ArrayList<>();
+		 
+		 for (Student student : students) {
+			 studentDTOList.add(mapper.map(student, StudentDTO.class));	
+		}
+	       return studentDTOList;
+	 }
+	 
+	 
+	 
+	 @GetMapping("/student/{id}")
+	 @ResponseBody
+	 public StudentDTO findById(@PathVariable int id){
+		 Optional<Student> student = studentService.getStudentById(id);
+		 return  mapper.map(student.get(), StudentDTO.class);
+			
+		
+	 }
+	 
+	 @PostMapping("/stud")
+	 public StudentDTO addStudent(@RequestBody StudentDTO studentDTO){
+		 Student student = mapper.map(studentDTO, Student.class);
+		 this.studentService.createStudent(student);
+		 return mapper.map(student, StudentDTO.class);
+	 }
+	 
+	 @PutMapping("/stud/{id}")
+	 public  StudentDTO updateStudent(@RequestBody StudentDTO studentDTO,  @PathVariable int id) {
+		 Optional<Student> st = this.studentService.getStudentById(id);
+	
+		 if(!st.isEmpty()) { 
+			 Student student = mapper.map(studentDTO, Student.class);
+			 student.setId(id);
+			 student = this.studentService.updateStudent(student, id);			 
+			 return mapper.map(student, StudentDTO.class);
+		 }
+		 else {
+			 	throw new ResponseStatusException(HttpStatus.NOT_FOUND, "ID Not Found");	
+			 }
+			
+		 }
+		
+		
+		 
+	 
+
+	 @DeleteMapping("/student/{id}")
+	 @ResponseBody
+	 public String deleteStudent(@PathVariable int id) {
+		this.studentService.deleteStudent(id); 
+		return "succeful  adding";
+	 }
+	 
+	@GetMapping("/getSeminar/{id}")
+	@ResponseBody
+	public List<Seminar>getSeminars(@PathVariable int id){
+		if(this.studentService.verify(id)) {
+			return this.studentService.getSeminarsTaken(id);
+		}else {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "ID Not Found");
+		}
+	}
+}
